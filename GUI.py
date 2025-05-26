@@ -1,16 +1,33 @@
 # Python GUI for Academic Staff Using Tkinter and mysql-connector-python
 
+import os
+import json
 import tkinter as tk
 from tkinter import ttk, messagebox, Menu
 import mysql.connector
 from PIL import Image, ImageTk
 
+# Base directory and paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ICON_PATH = os.path.join(BASE_DIR, 'icon.ico')
+LOGO_PATH = os.path.join(BASE_DIR, 'Logo.png')
+CONFIG_PATH = os.path.join(BASE_DIR, 'db_config.json')
+
+# Load DB config from JSON file
+def load_db_config():
+    try:
+        with open(CONFIG_PATH, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to load DB config: {e}")
+        return None
+        
 # Global login window
 class LoginWindow:
     def __init__(self, master):
         self.master = master
         master.title("Login")
-        master.iconbitmap(r"D:\\School_GUI\\icon.ico")
+        master.iconbitmap(ICON_PATH)
         master.geometry("900x600")
         master.state('zoomed')
         screen_width = master.winfo_screenwidth()
@@ -21,7 +38,7 @@ class LoginWindow:
         self.frame = tk.Frame(master)
         self.frame.pack(expand=True)
 
-        img = Image.open(r"D:/School_GUI/Logo.png") 
+        img = Image.open(LOGO_PATH) 
         img = img.resize((150, 150))  # resize as needed
         self.logo_img = ImageTk.PhotoImage(img)
         self.logo = tk.Label(self.frame, image=self.logo_img)
@@ -87,12 +104,18 @@ class LoginWindow:
     def check_login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
+        config = load_db_config()
+
+        if not config:
+            return  # Error already shown
+
         try:
             conn = mysql.connector.connect(
-                host="localhost",
+                host=config.get("host", "localhost"),
+                port=config.get("port", 3306),
                 user=username,
                 password=password,
-                database="School"
+                database=config.get("database")
             )
             cursor = conn.cursor()
             role = username.split("_")[0]  # extract 'teacher' from 'teacher_user'
@@ -108,7 +131,7 @@ class AcademicSystemApp(tk.Tk):
     def __init__(self, conn, role, username, password, master):
         super().__init__()
         self.master = master
-        self.iconbitmap(r"D:\\School_GUI\\icon.ico")
+        self.iconbitmap(ICON_PATH)
         self.conn = conn
         self.cursor = conn.cursor()
         self.role = role
